@@ -52,6 +52,9 @@ def test_parse_source_code(python_source_code):
             "from stractor.util import logger", 
             "from google import genai"
         ],
+        top_level_attributes=[
+            'default_model = "deepseek-r1:8b"'
+        ],
         top_level_functions=[
             Function(
                 name="get_auto_client",
@@ -92,6 +95,7 @@ def test_parse_source_code(python_source_code):
     # Test assertions
     assert res.documentation == expected_source_file.documentation
     assert sorted(res.imports) == sorted(expected_source_file.imports)
+    assert sorted(res.top_level_attributes) == sorted(expected_source_file.top_level_attributes)
     assert len(res.top_level_functions) == len(expected_source_file.top_level_functions)
     assert len(res.entities) == len(expected_source_file.entities)
     

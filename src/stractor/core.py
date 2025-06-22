@@ -33,6 +33,9 @@ class Stractor:
         # Extract imports
         imports = self._get_imports()
         
+        # Extract top-level attributes
+        top_level_attributes = self._get_top_level_attributes()
+        
         # Extract top-level functions
         top_level_functions = self._get_module_functions()
         
@@ -43,6 +46,7 @@ class Stractor:
             path=path,
             documentation=documentation,
             imports=imports,
+            top_level_attributes=top_level_attributes,
             top_level_functions=top_level_functions,
             entities=entities
         )
@@ -120,6 +124,25 @@ class Stractor:
                 imports.append(import_text)
         
         return imports
+    
+    def _get_top_level_attributes(self) -> list[str]:
+        """Extract top-level variable assignments from the parsed Python file."""
+        attributes_scm = """(module
+    (expression_statement
+        (assignment) @assignment
+    )           
+)"""
+        
+        query = self.lang.query(attributes_scm)
+        captures = query.captures(self.tree.root_node)
+        
+        attributes = []
+        for node in captures['assignment']:
+            attr_text = self._text(node)
+            if attr_text:
+                attributes.append(attr_text)
+        
+        return attributes
     
     def _get_module_functions(self) -> list[Function]:
         """Extract top-level function definitions."""
