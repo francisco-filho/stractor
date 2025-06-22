@@ -1,4 +1,5 @@
 import re
+from tree_sitter import Tree
 from tree_sitter_language_pack import get_language, get_parser
 
 from stractor.model import Function, Entity, SourceFile
@@ -12,7 +13,7 @@ class Stractor:
         self.parser = get_parser(self.language)
         self.lang = get_language(self.language)
         self.contents = None
-        self.tree = None
+        self.tree : Tree = None
     
     def parse(self, source_code: str, path: str = "") -> SourceFile:
         """Parse Python source code and extract its structure.

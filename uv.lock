@@ -166,25 +166,27 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "pydantic" },
+    { name = "tree-sitter" },
+    { name = "tree-sitter-language-pack" },
 ]
 
 [package.dev-dependencies]
 dev = [
     { name = "pytest" },
     { name = "pytest-cov" },
-    { name = "tree-sitter" },
-    { name = "tree-sitter-language-pack" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "pydantic", specifier = ">=2.11.7" }]
+requires-dist = [
+    { name = "pydantic", specifier = ">=2.11.7" },
+    { name = "tree-sitter", specifier = ">=0.24.0" },
+    { name = "tree-sitter-language-pack", specifier = ">=0.7.3" },
+]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "pytest", specifier = ">=8.4.1" },
     { name = "pytest-cov", specifier = ">=6.2.1" },
-    { name = "tree-sitter", specifier = ">=0.24.0" },
-    { name = "tree-sitter-language-pack", specifier = ">=0.7.3" },
 ]
 
 [[package]]
