@@ -127,11 +127,13 @@ class Stractor:
     
     def _get_top_level_attributes(self) -> list[str]:
         """Extract top-level variable assignments from the parsed Python file."""
-        attributes_scm = """(module
-    (expression_statement
-        (assignment) @assignment
-    )           
-)"""
+        attributes_scm = """
+        (module
+            (expression_statement
+                (assignment) @assignment
+            )           
+        )
+        """
         
         query = self.lang.query(attributes_scm)
         captures = query.captures(self.tree.root_node)
@@ -152,9 +154,7 @@ class Stractor:
                 name: (identifier) @name
                 parameters: (parameters) @params
                 return_type: (type)? @return_type
-                body: (block
-                    (expression_statement (string))? @doc
-                )
+                body: (block) @body
             )
         )
         """
@@ -167,11 +167,10 @@ class Stractor:
             name = self._text(self._get_node(match, 'name'))
             params = self._text(self._get_node(match, 'params'))
             return_type = self._text(self._get_node(match, 'return_type'))
-            doc = self._text(self._get_node(match, 'doc'))
+            body_node = self._get_node(match, 'body')
             
-            # Clean up docstring
-            if doc:
-                doc = doc.strip('\'"').strip()
+            # Extract docstring and body
+            doc, body = self._extract_docstring_and_body(body_node)
             
             # Clean up parameters (remove outer parentheses)
             if params:
@@ -181,7 +180,8 @@ class Stractor:
                 name=name,
                 parameters=params if params else None,
                 return_type=return_type if return_type else None,
-                documentation=doc if doc else None
+                documentation=doc if doc else None,
+                body=body if body else None
             ))
         
         return functions
@@ -230,9 +230,7 @@ class Stractor:
             name: (identifier) @name
             parameters: (parameters) @params
             return_type: (type)? @return_type
-            body: (block
-                (expression_statement (string))? @doc
-            )
+            body: (block) @body
         )
         """
         
@@ -244,11 +242,10 @@ class Stractor:
             name = self._text(self._get_node(match, 'name'))
             params = self._text(self._get_node(match, 'params'))
             return_type = self._text(self._get_node(match, 'return_type'))
-            doc = self._text(self._get_node(match, 'doc'))
+            body_node = self._get_node(match, 'body')
             
-            # Clean up docstring
-            if doc:
-                doc = doc.strip('\'"').strip()
+            # Extract docstring and body
+            doc, body = self._extract_docstring_and_body(body_node)
             
             # Clean up parameters (remove outer parentheses)
             if params:
@@ -258,7 +255,71 @@ class Stractor:
                 name=name,
                 parameters=params if params else None,
                 return_type=return_type if return_type else None,
-                documentation=doc if doc else None
+                documentation=doc if doc else None,
+                body=body if body else None
             ))
         
         return methods
+    
+    def _extract_docstring_and_body(self, body_node):
+        """Extract docstring and body from a function's block node.
+        
+        Args:
+            body_node: The Tree-sitter block node of the function body
+            
+        Returns:
+            Tuple of (docstring, body) where docstring is cleaned and body excludes the docstring
+        """
+        if not body_node:
+            return None, None
+        
+        full_body_text = self._text(body_node)
+        
+        # Query to find docstring in the body
+        docstring_scm = """
+        (block
+            (expression_statement 
+                (string) @doc
+            )
+        )
+        """
+        
+        query = self.lang.query(docstring_scm)
+        matches = query.matches(body_node)
+        
+        docstring = None
+        body = full_body_text
+        
+        if matches:
+            # Get the first docstring
+            first_match = matches[0]
+            doc_node = self._get_node(first_match, 'doc')
+            if doc_node:
+                docstring_text = self._text(doc_node)
+                # Clean up the docstring by removing quotes and extra whitespace
+                docstring = docstring_text.strip('\'"').strip()
+                
+                # Remove the docstring from the body
+                # Find the docstring in the full body and remove it
+                docstring_with_quotes = self._text(doc_node)
+                body_lines = full_body_text.split('\n')
+                filtered_lines = []
+                skip_docstring = False
+                
+                for line in body_lines:
+                    if docstring_with_quotes.strip() in line and not skip_docstring:
+                        skip_docstring = True
+                        continue
+                    if not skip_docstring or line.strip():
+                        filtered_lines.append(line)
+                        skip_docstring = False
+                
+                body = '\n'.join(filtered_lines).strip()
+        
+        # Clean up body - remove outer braces and extra whitespace
+        if body:
+            body = body.strip()
+            if body.startswith('{') and body.endswith('}'):
+                body = body[1:-1].strip()
+        
+        return docstring, body

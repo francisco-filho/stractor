@@ -5,6 +5,7 @@ class Function(BaseModel):
     parameters: str | None
     return_type: str | None
     documentation: str | None
+    body: str | None
 
 class Entity(BaseModel):
     name: str
